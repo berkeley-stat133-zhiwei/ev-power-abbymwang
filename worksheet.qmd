@@ -4,15 +4,14 @@ format: typst
 
 # Lab 4 Worksheet - Practice
 
-* add something about loading a csv and having to use
-# Split the one column into four
-energy_raw <- separate(
-  energy_raw,
-  col = 1,
-  into = c("State", "2021", "2022", "2023"),
-  sep = ","
-)
-* make sure str extract is clear str_extract(.x, "\\d+\\.?\\d*")
+```{r}
+library(tidyverse)
+library(dplyr)
+library(stringr)
+```
+
+-   add something about loading a csv and having to use \# Split the one column into four energy_raw \<- separate( energy_raw, col = 1, into = c("State", "2021", "2022", "2023"), sep = "," )
+-   make sure str extract is clear str_extract(.x, "\\d+\\.?\\d\*")
 
 #### Q1. Extract and clean text patterns from strings using regular expressions.
 
@@ -25,29 +24,35 @@ energy_sources <- c("Solar (MWh)", "Wind (GWh)", "Coal (MWh)", "Hydro (kWh)")
 a.  Use str_detect() to identify all energy sources that contain the substring "Wind" or "Hydro" (hint: use the \| operator in regex).
 
 ```{r}
-
+str_detect(energy_sources, "Wind|Hydro")
 ```
 
 b.  Extract the unit type (e.g., MWh, GWh, kWh) using str_extract(). Make sure your pattern handles extra spaces or hyphens.
 
 ```{r}
-
+str_extract(energy_sources, "\\b[MGk]Wh\\b")
 ```
 
 c.  Clean the names to keep only the energy source name, trimming whitespace and removing parentheses.
 
 ```{r}
-
+sources_clean = str_replace(energy_sources, "\\s\\(.*\\)", "") |> str_trim()
+sources_clean
 ```
 
 d.  Create a clean tibble called energy_clean with two columns: source and unit.
 
 ```{r}
-
+energy_clean = tibble(
+    source=sources_clean,
+    unit=str_extract(energy_sources, "[MGk]Wh")
+)
+energy_clean
 ```
 
 e.  Discussion: Why might regex cleaning be important before performing joins or aggregations?\
     \
+    Remove extraneous variables. Yay. Makes sure joins and analysis return correctly.
 
 #### Q2. State Datasets: Joins and Pivots
 
@@ -70,34 +75,40 @@ states <- states |>
 regions <- data.frame(state = state.name, region = state.region)
 
 states
-
+regions
 ```
 
 a.  Perform a left join to combine socioeconomic and regional data.
 
 ```{r}
-
+states_left_join <- states |> left_join(regions, by="state")
 ```
 
 b.  Perform an inner join. How many rows remain, and why is it the same or different?
 
 ```{r}
-
+states_inner_join <- states |> inner_join(regions, by="state")
+#It's the same because both states and region have same states.
 ```
-
 
 c.  Perform an anti join to check if any state names don’t match between datasets. What might cause mismatches like this in real projects?
 
 ```{r}
-
+states_anti_join <- states |> anti_join(regions, by="state")
+#0 mismatches, mismatches might come from typos, missing rows, etc. 
 ```
 
 d.  Discussion: Why would you prefer a left join over an inner join when merging state-level datasets?\
-    \
-e. Use pivot_longer() to make the socioeconomic data longer.\
+    Left join -\> includes common data + all data from original data\
+    Inner join -\> drop with missing matches, can bias
+e.  Use pivot_longer() to make the socioeconomic data longer.
 
 ```{r}
-
+states_longer <- states |> pivot_longer(
+cols = c(Income, Population, Illiteracy),
+names_to = "metric",
+values_to = "value"
+)
 ```
 
 #### Q2.5.
@@ -118,22 +129,27 @@ sales <- tibble(
 sales
 ```
 
-a. Convert the dataset from wide (one column per month) to long (one row per month per store).
+a.  Convert the dataset from wide (one column per month) to long (one row per month per store).
 
 ```{r}
-
+sales_long <- sales |> pivot_longer(cols=Jan_Sales:Mar_Sales, names_to="Month", values_to="Sales")
+sales_long
 ```
 
-b. Clean month names by removing _Sales.
+b.  Clean month names by removing \_Sales.
 
 ```{r}
-
+sales_long <- sales_long |>
+    mutate(Month=str_remove(Month,"_Sales"))
+sales_long
 ```
 
-c. Convert the long dataset back to wide, with one column per month.
+c.  Convert the long dataset back to wide, with one column per month.
 
 ```{r}
-
+sales_wide <- sales_long |>
+    pivot_wider(names_from=Month, values_from=Sales)
+sales_wide
 ```
 
 #### Q3. Mapping
@@ -151,12 +167,17 @@ state_data <- states |>
   left_join(regions, by = "state") |>
   mutate(state = tolower(state))
 
+us_map
+state_data
 ```
 
 Use a join to combine the us_map with the state_data
 
 ```{r}
-us_map_joined <- ...
+us_map <- us_map |>
+    rename(state = region)
+us_map_joined <- left_join(state_data, us_map, by="state")
+us_map_joined
 ```
 
 Create a chloropleth map:
@@ -170,10 +191,15 @@ ggplot(us_map_joined, aes(long, lat, group = group, fill = Income)) +
   labs(title = "Average Income by State")
 ```
 
-b.  Swap Income for Life Exp to visualize life expectancy instead. Try changing the color scale using scale_fill_gradient() or scale_fill_gradient2()
+b.  Swap Income for Illiteracy to visualize illiteracy instead. Try changing the color scale using scale_fill_gradient() or scale_fill_gradient2()
 
 ```{r}
-
+ggplot(us_map_joined, aes(long, lat, group = group, fill = Illiteracy)) +
+  geom_polygon(color = "white") +
+  coord_fixed(1.3) +
+  theme_minimal() +
+  scale_fill_viridis_c() +
+  labs(title = "Average Illiteracy by State")
 ```
 
 #### Q4. Quarto Dashboard Setup

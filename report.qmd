@@ -3,6 +3,8 @@ title: "EV Power - Lab 4 Project Report"
 format: typst
 ---
 
+I'm really sick and have been battling two midterms in the last couple of days forgive me I will do this project on my own time before the quiz...
+
 # Example Solution 1
 
 ## **Part 0: libraries**

@@ -3,3 +3,18 @@ title: "EV Power Dashboard"
 format: dashboard
 ---
 
+## Overview
+
+Your project introduction.
+
+## Map Visualization
+
+Paste your ggplot map code here
+
+## Data Table
+
+Show your joined dataset
+
+```{r}
+#head(us_map_joined)
+```
